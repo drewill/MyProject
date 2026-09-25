@@ -13,3 +13,7 @@ __pycache__/
 # IDE
 .idea/
 .vscode/
+
+# ChromaDB vector database
+chroma_store/
+*/chroma_store/
