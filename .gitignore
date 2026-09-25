@@ -1,0 +1,15 @@
+# Virtual Environment
+
+
+
+# 环境变量，禁止上传
+.env
+.env.*
+
+# Python
+__pycache__/
+*.pyc
+
+# IDE
+.idea/
+.vscode/
