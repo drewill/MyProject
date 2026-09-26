@@ -33,6 +33,8 @@ dir_chroma.mkdir(exist_ok=True, parents=True)
 
 
 
+
+
 class IngestionState(TypedDict):
     file_path: str
     raw_document: list[Document]
@@ -45,17 +47,17 @@ class IngestionState(TypedDict):
 
 
 
-def build_RAG():
+def build_RAG(pdf_path):
     # build pdf file
-    pdf_path = create_sample_documents()
+
     pdf_path1 = r"C:\Users\qxx\Desktop\Langchain1.0-Study-main\MyProject\RAGProject\test.pdf"
-    if not os.path.exists(pdf_path1):
+    if not os.path.exists(pdf_path):
         print("样本 PDF 不存在，跳过此示例")
         return None
 
     # step 1: load pdf
     print("Step 1: 解析 PDF=======================》")
-    pages = parse_pdf(pdf_path1)
+    pages = parse_pdf(pdf_path)
 
     # step 2: 文本切片
     print("文本切片===================》")
@@ -154,7 +156,7 @@ def _embed_and_store(state: IngestionState) -> dict:
         embeddings = HuggingFaceEmbeddings(model_name=embed_model_ch)
 
         # client = chromadb.PersistentClient(path=str(dir_chroma))
-        reset_collection(collection_name)
+        # reset_collection(collection_name)
         vectorstore = Chroma(
             collection_name=collection_name,
             embedding_function=embeddings,
@@ -320,7 +322,7 @@ def embed_and_store(chunks: list[Document],
 
 
     #client = chromadb.PersistentClient(path=str(dir_chroma))
-    reset_collection(collection_name)
+    #reset_collection(collection_name)
     vectorstore = Chroma(
         collection_name = collection_name,
         embedding_function=embeddings,

@@ -17,3 +17,5 @@ __pycache__/
 # ChromaDB vector database
 chroma_store/
 */chroma_store/
+
+RAGProject/test.pdf

@@ -7,6 +7,7 @@ import os
 from rich import print as rprint
 from langchain_core.tools import tool
 
+from RAGProject.PDFDatabase import get_all_pdfs
 from RAGSystem import build_RAG_graph,retrieval_docs
 
 load_dotenv(override=True)
@@ -41,30 +42,104 @@ def local_RAG_knowledge(query: str)->str :
         print("知识库中没有检索到相关内容。")
 
     results = []
-    for doc in out:
-        source = Path(doc.metadata.get('source','unkown')).name
-        page = doc.metadata.get('page',0)
+
+    for i, doc in enumerate(out):
+
+        pdf_id = doc.metadata.get(
+            "pdf_id",
+            "unknown"
+        )
+
+        pdf_name = doc.metadata.get(
+            "pdf_name",
+            "unknown"
+        )
+
+        page = doc.metadata.get(
+            "page",
+            0
+        )
+
+        try:
+            page = int(page) + 1
+        except:
+            pass
 
         results.append(
-            f"资料{page}页，来源:{source},内容：\n{doc.page_content} \n"
+            f"""
+    【资料 {i + 1}】
+
+    PDF ID：
+    {pdf_id}
+
+    文件：
+    {pdf_name}
+
+    页码：
+    {page}
+
+    内容：
+    {doc.page_content}
+    """
         )
+
+    return "\n".join(results)
 
     return results
 
+@tool
+def list_pdf_documents() -> str:
+    """
+    查看当前知识库中所有PDF文件。
+    当用户询问知识库有哪些文件、有哪些论文时使用。
+    """
 
-prompt = """
-        你是一个知识库智能助手。
+    pdfs = get_all_pdfs()
+
+    if not pdfs:
+        return "当前知识库没有PDF文件。"
+
+    results = []
+
+    for pdf in pdfs:
+
+        size_mb = (
+            pdf.file_size /
+            1024 /
+            1024
+        )
+
+        results.append(
+            f"""
+                PDF ID：{pdf.id}
+                文件名：{pdf.original_name}
+                大小：{size_mb:.2f} MB
+                入库状态：{pdf.ingest_status}
+                上传时间：{pdf.created_at}
+            """
+        )
+
+    return "\n".join(results)
+
+
+prompt ="""
+        你是一个本地知识库智能助手。
         
-        当用户的问题涉及论文、PDF、技术资料或项目文档时，
-        优先调用 search_knowledge_base 搜索知识库。
+        你拥有两个工具：
         
-        回答必须优先依据检索结果。
-        如果知识库没有相关内容，应明确说明。
-        回答时尽量注明来源文件和页码。
+        1. local_RAG_knowledge
+        用于查询PDF正文中的知识。
         
-        对于普通闲聊或常识等和内部数据库无关的问题，可以拒绝直接回答，
+        2. list_pdf_documents
+        用于查看知识库有哪些PDF。
         
+        如果用户询问文档内容，
+        使用local_RAG_knowledge。
+        
+        如果用户询问知识库有哪些文件，
+        使用list_pdf_documents。
         """
+
 prompt1 = """
 You are a knowledge base assistant.
 
@@ -84,7 +159,7 @@ model = init_chat_model(
 
 agent = create_agent(
     model=model,
-    tools=[get_weather, local_RAG_knowledge],
+    tools=[get_weather, local_RAG_knowledge,list_pdf_documents],
     system_prompt=prompt
 )
 # response = agent.invoke({
@@ -95,7 +170,7 @@ agent = create_agent(
 # })
 response = agent.invoke({
     "messages":[
-        {"role":"user","content":"今天纽约的天气怎么样"}
+        {"role":"user","content":"小河旁边的动物是怎么活动的？"}
     ]
 })
 rprint(
