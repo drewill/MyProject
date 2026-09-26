@@ -19,3 +19,5 @@ chroma_store/
 */chroma_store/
 
 RAGProject/test.pdf
+
+*.db
