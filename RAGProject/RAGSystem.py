@@ -51,17 +51,23 @@ def build_RAG(pdf_path):
     # build pdf file
 
     pdf_path1 = r"C:\Users\qxx\Desktop\Langchain1.0-Study-main\MyProject\RAGProject\test.pdf"
-    if not os.path.exists(pdf_path):
-        print("样本 PDF 不存在，跳过此示例")
-        return None
+    if not os.path.isfile(pdf_path):
+        raise FileNotFoundError(f"PDF 文件不存在：{pdf_path}")
 
     # step 1: load pdf
     print("Step 1: 解析 PDF=======================》")
     pages = parse_pdf(pdf_path)
 
+    if not pages or not any(
+            page.page_content.strip() for page in pages
+    ):
+        raise ValueError("PDF 未提取到文字，请检查文件是否为扫描件")
+
     # step 2: 文本切片
     print("文本切片===================》")
     chunks = chunk_documents(pages)
+    if not chunks:
+        raise ValueError("PDF 切分结果为空")
 
     # step 3:embedding + chromaDB 入库
     print("Step 3: Embedding + 入库")
@@ -194,7 +200,7 @@ def retrieval_docs(vectorstore,content: str):
     retrieval = vectorstore.as_retriever(
         search_type = "similarity",
         search_kwargs = {
-            "k":1
+            "k":3
         }
     )
     docs= retrieval.invoke(content)
@@ -365,6 +371,18 @@ def reset_collection(collection_name: str = "rag_collection"):
         print(f"  [OK] 已清空集合: {collection_name}")
     except Exception:
         pass  # 集合不存在时忽略
+
+def load_vectorstore():
+    """连接已有的向量库，不生成或导入示例文档。"""
+    embeddings = HuggingFaceEmbeddings(
+        model_name=embed_model_ch
+    )
+
+    return Chroma(
+        collection_name="rag_collection",
+        embedding_function=embeddings,
+        persist_directory=str(dir_chroma),
+    )
 def main():
     # vectorstore = build_RAG()
     vectorstore = build_RAG_graph()

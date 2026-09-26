@@ -7,15 +7,16 @@ import os
 from rich import print as rprint
 from langchain_core.tools import tool
 
-from RAGProject.PDFDatabase import get_all_pdfs
+from PDFDatabase import get_all_pdfs
 from RAGSystem import build_RAG_graph,retrieval_docs
+from RAGSystem import load_vectorstore
 
 load_dotenv(override=True)
 key = os.getenv("DEEPSEEK_FLASH_KEY")
 url = os.getenv("DEEPSEEK_FLASH_URL")
 
-vectorstore = build_RAG_graph()
-
+#vectorstore = build_RAG_graph()
+vectorstore = load_vectorstore()
 
 @tool
 def get_weather(city: str):
@@ -122,6 +123,9 @@ def list_pdf_documents() -> str:
     return "\n".join(results)
 
 
+
+
+
 prompt ="""
         你是一个本地知识库智能助手。
         
@@ -162,17 +166,29 @@ agent = create_agent(
     tools=[get_weather, local_RAG_knowledge,list_pdf_documents],
     system_prompt=prompt
 )
-# response = agent.invoke({
-#     "messages":[
-#         {"role":"system","content":"你是一个天气查询助手"},
-#         {"role":"user","content":"北京的天气今天怎么样？"}
-#     ]
-# })
-response = agent.invoke({
-    "messages":[
-        {"role":"user","content":"小河旁边的动物是怎么活动的？"}
-    ]
-})
-rprint(
-    response
-)
+def ask_agent(question:str)->str:
+    response = agent.invoke({
+        "messages": [
+            {"role": "user", "content": question}
+        ]
+    })
+    final_message = response['messages'][-1]
+    content = final_message.content
+    if isinstance(content, str):
+        return content
+
+    parts = []
+    for block in content:
+        if isinstance(block, str):
+            parts.append(block)
+        elif isinstance(block, dict):
+            text = block.get("text")
+            if isinstance(text, str):
+                parts.append(text)
+
+    return "\n".join(parts)
+
+
+if __name__ == "__main__":
+    answer = ask_agent("池塘旁边的动物是怎么活动的？")
+    print(answer)
